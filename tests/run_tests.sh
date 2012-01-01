@@ -1,13 +1,16 @@
 #!/bin/sh
 
+RED="\033[1;31m"
+GREEN="\033[1;32m"
+NC="\e[0m" # No Color
+
 failed() {
     TESTCASE=$1
-    echo "Test failed in testcase: " $TESTCASE
+    echo -e "Test" $RED"failed"$NC "in testcase: " $TESTCASE
 }
 success() {
     TESTCASE=$1
-    echo "Test success in testcase: " $TESTCASE
-
+    echo -e "Test" $GREEN"success"$NC "in testcase: " $TESTCASE
 }
 
 clean() {
