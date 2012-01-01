@@ -4,7 +4,7 @@
  * @author Fabian M.
  */
 
-// Includes.
+/* Includes. */
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -12,16 +12,18 @@
 #include <string.h>
 #include <stdint.h>
 
-// Constants.
-#define VERSION "1.0"
+/* Constants. */
+#define VERSION "1.0.1"
+#define MAX_CELLS 30000
 
-// Program
+/* Program */
 typedef struct
 {
     /**
      * The file to interpret.
      */
     char *file;
+
     /**
      * The amount of memory cells to reserve.
      */
@@ -61,8 +63,8 @@ void interpreter_help() {
     printf("Brainfuck interpreter, version %s.\n\n", VERSION);
 
     printf("Usage: ./brainfuck <input_file>.\n");
-    printf("\t\"-v\"    Prints out the version of the program.\n");
-    printf("\t\"-h\"    Prints out the help (what you are seeing).\n");
+    printf("\t-v    Prints out the version of the program.\n");
+    printf("\t-h    Prints out the help (what you are seeing).\n");
 
     exit(EXIT_SUCCESS);
 }
@@ -75,15 +77,15 @@ void interpreter_help() {
  * @param char *argv[], the arguments passed string.
  */
 void parse_args(Program *program, int argc, char *argv[]) {
-    // Clear program->file value.
-    program->file = "";
-    // Make it compatible with C90.
-    int i = 1;
+    int i = 0;
 
-    for(; i < argc; i++) {
-        if(!strcmp("-v", argv[i])) {
+    /* Clear program->file value. */
+    program->file = "";
+
+    for(i=1; i<argc; i++) {
+        if(strcmp("-v", argv[i]) == 0) {
             interpreter_version();
-        } else if(!strcmp("-h", argv[i])) {
+        } else if(strcmp("-h", argv[i]) == 0) {
             interpreter_help();
         } else {
             program->file = argv[i];
@@ -95,51 +97,54 @@ void parse_args(Program *program, int argc, char *argv[]) {
  * Interprets the file given at startup.
  */
 void interpret(Program *program) {
-    if(!program->file || program->file == "") {
-        printf("Missing required arguments, interpreter terminating. \n");
+    if(!program->file || strcmp(program->file, "") == 0) {
+        printf("Missing required arguments, interpreter terminating.\n");
         interpreter_help();
         exit(EXIT_FAILURE);
     }
 
-    // Open file wrapper
+    /* Open file wrapper. */
     FILE *input = fopen(program->file, "r");
 
     if(!input) {
         interpreter_error("Could not access input file.");
     }
 
-    // Set the amount of cells to 30000
-    program->cells = 30000;
+    /* Set the amount of cells. */
+    program->cells = MAX_CELLS;
 
-    // Contains all memory.
+    /* Contains all memory. */
     int data[program->cells];
-    // Points to the current Loop through all characters.index.
+
+    /* Points to the current Loop through all characters.index. */
     int dataPointer = 0;
 
-    // Get size of file.
-    fseek(input, 0, SEEK_END); // seek to end of file
-    int file_size = ftell(input); // get current file pointer
-    fseek(input, 0, SEEK_SET); // seek back to beginning of file
+    /* Get size of file. */
+    fseek(input, 0, SEEK_END); /* seek to end of file */
+    int file_size = ftell(input); /* get current file pointer */
+    fseek(input, 0, SEEK_SET); /* seek back to beginning of file */
 
-    // Current char.
-    char c;
-    // Array that contains all characters.
-    char *chars[file_size];
-    // Index at the character array.
+    /* Current char. */
+    char current_char;
+    /* Array that contains all characters. */
+    char chars[file_size];
+    /* Index at the character array. */
     int charPointer = 0;
 
-    // Get file contents.
-    while((c = fgetc(input)) != EOF) {
-        chars[charPointer] = (char) c;
+    /* Get file contents. */
+    while((current_char = (char) fgetc(input)) != EOF) {
+        chars[charPointer] = current_char;
         charPointer++;
     }
 
     int i = 0;
 
-    // Loop through all characters.
-    for (charPointer = 0; charPointer < file_size; charPointer++) {
-        c = chars[charPointer];
-        switch(c) {
+    /* Loop through all characters. */
+    charPointer = 0;
+    while(charPointer < file_size) {
+
+        current_char = chars[charPointer];
+        switch(current_char) {
         case '>':
             if ((dataPointer + 1) > sizeof(data)) {
                 interpreter_error("Data pointer is too big.");
@@ -188,7 +193,7 @@ void interpret(Program *program) {
                 }
             }
             break;
-        // Allow hashtags (#).
+        /* Allow hashtags (#). */
         case '#': {
                 i = 1;
                 while (i > 0) {
@@ -200,6 +205,9 @@ void interpret(Program *program) {
             }
             break;
         }
+
+        /* Avance to the next character in the code. */
+        charPointer++;
     }
 }
 
@@ -208,9 +216,12 @@ void interpret(Program *program) {
  */
 int main(int argc, char *argv[]) {
     Program program;
-    // Parse arguments.
+
+    /* Parse arguments. */
     parse_args(&program, argc, argv);
-    // Interpret the program.
+
+    /* Interpret the program. */
     interpret(&program);
+
     return 0;
 }
