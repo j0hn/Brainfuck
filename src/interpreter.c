@@ -49,7 +49,7 @@ void interpreter_error(char* message) {
 /*
  * Prints out the version of the program.
  */
-void interpreter_version() {
+void interpreter_version(void) {
     printf("Brainfuck interpreter, version %s.\n\n", VERSION);
     printf("For more info, try \"./brainfuck -h\".\n");
 
@@ -59,7 +59,7 @@ void interpreter_version() {
 /*
  * Prints out the help of the program.
  */
-void interpreter_help() {
+void interpreter_help(void) {
     printf("Brainfuck interpreter, version %s.\n\n", VERSION);
 
     printf("Usage: ./brainfuck <input_file>.\n");
