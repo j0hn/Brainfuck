@@ -6,3 +6,6 @@
 
 # Ignore the output of the C compiler.
 Debug
+
+brainfuck
+*.o
