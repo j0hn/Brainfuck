@@ -12,9 +12,12 @@
 #include <string.h>
 #include <stdint.h>
 
+#include "stack.h"
+
 /* Constants. */
 #define VERSION "1.0.1"
-#define MAX_CELLS 30000
+#define MAX_CELLS 65536 /* 2^16 */
+#define CACHE_SIZE MAX_CELLS
 
 /* Program */
 typedef struct
@@ -41,7 +44,7 @@ void interpreter_output_char(char c) {
 /**
  * Generates error message.
  */
-void interpreter_error(char* message) {
+void interpreter_error(char *message) {
     printf("Error at line %i, file \"%s\": %s\n", __LINE__, __FILE__, message);
     exit(EXIT_FAILURE);
 }
@@ -129,21 +132,44 @@ void interpret(Program *program) {
     /* Array that contains all characters. */
     char chars[file_size];
     /* Index at the character array. */
-    int charPointer = 0;
+    int char_pointer = 0;
+
+    /* Loop cache */
+    Stack loop_stack = stack_empty(CACHE_SIZE);
+    int loop_cache[CACHE_SIZE];
 
     /* Get file contents. */
+    char_pointer = 0;
     while((current_char = (char) fgetc(input)) != EOF) {
-        chars[charPointer] = current_char;
-        charPointer++;
+        chars[char_pointer] = current_char;
+
+        /* Fill the loop cache */
+        if(current_char == '[') {
+            stack_push(loop_stack, char_pointer);
+        } else if(current_char == ']') {
+            int top = stack_pop(loop_stack);
+
+            if(top > CACHE_SIZE) {
+                printf("Not enought cache size\n");
+                exit(EXIT_FAILURE);
+            }
+
+            loop_cache[top] = char_pointer;
+            loop_cache[char_pointer] = top;
+        }
+
+        char_pointer++;
     }
 
-    int i = 0;
+    if(!stack_is_empty(loop_stack)){
+        interpreter_error("Unclosed [.");
+    }
 
     /* Loop through all characters. */
-    charPointer = 0;
-    while(charPointer < file_size) {
+    char_pointer = 0;
+    while(char_pointer < file_size) {
 
-        current_char = chars[charPointer];
+        current_char = chars[char_pointer];
         switch(current_char) {
         case '>':
             if ((dataPointer + 1) > sizeof(data)) {
@@ -171,43 +197,25 @@ void interpret(Program *program) {
             break;
         case '[':
             if(data[dataPointer] == 0){
-                bool stop = false;
-
-                while (!stop) {
-                    char next = chars[++charPointer];
-                    if (next == ']'){
-                        stop = true;
-                    }
-                }
+                char_pointer = loop_cache[char_pointer];
             }
             break;
         case ']':
             if(data[dataPointer] != 0){
-                bool stop = false;
-
-                while (!stop) {
-                    char next = chars[--charPointer];
-                    if (next == '['){
-                        stop = true;
-                    }
-                }
+                char_pointer = loop_cache[char_pointer];
             }
             break;
         /* Allow hashtags (#). */
-        case '#': {
-                i = 1;
-                while (i > 0) {
-                    char next = chars[++charPointer];
-
-                    if (next == '\n')
-                        i--;
-                }
+        case '#':
+            while (chars[char_pointer] != '\n') {
+                char_pointer++;
             }
+
             break;
         }
 
         /* Avance to the next character in the code. */
-        charPointer++;
+        char_pointer++;
     }
 }
 
